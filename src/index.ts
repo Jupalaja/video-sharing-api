@@ -1,9 +1,9 @@
-import * as dotenv from "dotenv";
-import express from "express";
-import cors from "cors";
+import * as dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
 
-import { authorRouter } from "./author/author.router";
-import { bookRouter } from "./book/book.router";
+import { userRouter } from './user/user.router';
+import { videoRouter } from './video/video.router';
 
 dotenv.config();
 
@@ -17,8 +17,9 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/authors", authorRouter);
-app.use("/api/books", bookRouter);
+
+app.use('/api/user', userRouter);
+app.use('/api/video', videoRouter);
 
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
