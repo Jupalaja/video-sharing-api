@@ -1,28 +1,25 @@
-import { db } from '../utils/db.server';
+import { db } from '../config/db.server';
 
 export type User = {
-  id: string;
+  id: number;
   username: string;
   email: string;
-  hashedPassword: string;
-  fechaRegistro: Date; // Assuming this is 'registration date'
+  password: string;
+  registerDate: Date;
 };
 
-// List all users with minimal sensitive data for public exposure
 export const listUsers = async (): Promise<Partial<User>[]> => {
   return db.user.findMany({
     select: {
       id: true,
       username: true,
       email: true,
-      fechaRegistro: true,
-      // Do not include hashedPassword for security reasons
+      registerDate: true,
     },
   });
 };
 
-// Get a single user by ID with sensitive data excluded
-export const getUser = async (id: string): Promise<Partial<User> | null> => {
+export const getUser = async (id: number): Promise<Partial<User> | null> => {
   return db.user.findUnique({
     where: {
       id,
@@ -31,36 +28,64 @@ export const getUser = async (id: string): Promise<Partial<User> | null> => {
       id: true,
       username: true,
       email: true,
-      fechaRegistro: true,
-      // Do not include hashedPassword for security reasons
+      registerDate: true,
     },
   });
 };
 
-// Create a new user
-export const createUser = async (
-  user: Omit<User, 'id' | 'fechaRegistro'>
-): Promise<User> => {
-  return db.user.create({
-    data: user,
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+  return db.user.findUnique({
+    where: {
+      email,
+    },
   });
 };
 
-// Update an existing user by ID
+export const getUserByUsername = async (
+  username: string
+): Promise<User | null> => {
+  return db.user.findUnique({
+    where: {
+      username,
+    },
+  });
+};
+
+export const createUser = async (
+  user: Omit<User, 'id' | 'registerDate'>
+): Promise<Partial<User>> => {
+  return db.user.create({
+    data: user,
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      registerDate: true,
+    },
+  });
+};
+
 export const updateUser = async (
-  id: string,
-  userUpdateData: Partial<Omit<User, 'id' | 'hashedPassword'>>
-): Promise<User> => {
+  id: number,
+  newPassword: string
+): Promise<Partial<User>> => {
   return db.user.update({
     where: {
       id,
     },
-    data: userUpdateData,
+    data: {
+      password: newPassword,
+    },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      registerDate: true,
+    },
   });
 };
 
-// Delete a user by ID
-export const deleteUser = async (id: string): Promise<void> => {
+export const deleteUser = async (id: number): Promise<void> => {
   await db.user.delete({
     where: {
       id,

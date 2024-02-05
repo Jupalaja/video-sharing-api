@@ -1,35 +1,41 @@
 import express from 'express';
 import type { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 
 import * as VideoService from './video.service';
 
 export const videoRouter = express.Router();
 
-// GET: List all the videos
 videoRouter.get('/', async (request: Request, response: Response) => {
   try {
     const videos = await VideoService.listVideos();
-    return response.status(200).json(videos);
+    return response.status(200).json({ data: videos });
   } catch (error: any) {
-    return response.status(500).json(error.message);
+    return response.status(500).json({ error: error.message });
   }
 });
 
-// GET: A video based on the id
-videoRouter.get('/:id', async (request: Request, response: Response) => {
-  const id: string = request.params.id;
-
-  try {
-    const video = await VideoService.getVideo(id);
-    if (video) {
-      return response.status(200).json(video);
+videoRouter.get(
+  '/:id',
+  [param('id').isUUID()],
+  async (request: Request, response: Response) => {
+    const errors = validationResult(request);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ error: errors.array() });
     }
-    return response.status(404).json('Video could not be found');
-  } catch (error: any) {
-    return response.status(500).json(error.message);
+    const id: string = request.params.id;
+
+    try {
+      const video = await VideoService.getVideo(id);
+      if (video) {
+        return response.status(200).json({ data: video });
+      }
+      return response.status(404).json({ message: 'Video could not be found' });
+    } catch (error: any) {
+      return response.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 videoRouter.post(
   '/',
@@ -43,21 +49,23 @@ videoRouter.post(
   async (request: Request, response: Response) => {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
-      return response.status(400).json({ errors: errors.array() });
+      return response.status(400).json({ error: errors.array() });
     }
     try {
       const videoData = request.body;
       const newVideo = await VideoService.createVideo(videoData);
-      return response.status(201).json(newVideo);
+      return response
+        .status(201)
+        .json({ message: 'Video was succesfully uploaded', data: newVideo });
     } catch (error: any) {
-      return response.status(500).json(error.message);
+      return response.status(500).json({ error: error.message });
     }
   }
 );
 
-// PUT: Update video
 videoRouter.put(
   '/:id',
+  [param('id').isUUID()],
   body('title').isString(),
   body('userId').isString(),
   body('description').isString(),
@@ -68,25 +76,38 @@ videoRouter.put(
   async (request: Request, response: Response) => {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
-      return response.status(400).json({ errors: errors.array() });
+      return response.status(400).json({ error: errors.array() });
     }
     const id: string = request.params.id;
     try {
       const videoUpdateData = request.body;
       const updatedVideo = await VideoService.updateVideo(id, videoUpdateData);
-      return response.status(200).json(updatedVideo);
+      return response.status(200).json({
+        message: 'Video info was succesfully updated',
+        data: updatedVideo,
+      });
     } catch (error: any) {
-      return response.status(500).json(error.message);
+      return response.status(500).json({ error: error.message });
     }
   }
 );
 
-videoRouter.delete('/:id', async (request: Request, response: Response) => {
-  const id: string = request.params.id;
-  try {
-    await VideoService.deleteVideo(id);
-    return response.status(204).json('Video was successfully deleted');
-  } catch (error: any) {
-    return response.status(500).json(error.message);
+videoRouter.delete(
+  '/:id',
+  [param('id').isUUID()],
+  async (request: Request, response: Response) => {
+    const errors = validationResult(request);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ error: errors.array() });
+    }
+    const id: string = request.params.id;
+    try {
+      await VideoService.deleteVideo(id);
+      return response
+        .status(204)
+        .json({ message: 'Video was successfully deleted' });
+    } catch (error: any) {
+      return response.status(500).json({ error: error.message });
+    }
   }
-});
+);

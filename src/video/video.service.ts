@@ -1,14 +1,14 @@
-import { db } from '../utils/db.server';
+import { db } from '../config/db.server';
 
 export type Video = {
   id: string;
   title: string;
   description: string;
   uploadedAt: Date;
-  credits?: string;
+  credits?: string | null;
   isPrivate: boolean;
   likes: number;
-  userId: string;
+  userId: number;
 };
 
 export const listVideos = async (): Promise<Video[]> => {
@@ -21,7 +21,7 @@ export const listVideos = async (): Promise<Video[]> => {
       credits: true,
       isPrivate: true,
       likes: true,
-      userId: true, // Depending on the sensitivity, you might exclude this
+      userId: true,
     },
   });
 };

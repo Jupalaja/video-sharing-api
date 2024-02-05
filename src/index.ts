@@ -8,6 +8,7 @@ import { videoRouter } from './video/video.router';
 dotenv.config();
 
 if (!process.env.PORT) {
+  console.log(`Error to get ports`);
   process.exit(1);
 }
 

@@ -1,10 +1,10 @@
-import { db } from '../src/utils/db.server';
+import { db } from '../src/config/db.server';
 import { v4 as uuidv4 } from 'uuid';
 
 type User = {
   username: string;
   email: string;
-  hashedPassword: string;
+  password: string;
 };
 
 type Video = {
@@ -22,10 +22,9 @@ async function seed() {
   for (const user of users) {
     await db.user.create({
       data: {
-        id: uuidv4(),
         username: user.username,
         email: user.email,
-        hashedPassword: user.hashedPassword,
+        password: user.password,
       },
     });
   }
@@ -63,17 +62,17 @@ function getSeedUsers(): Array<User> {
     {
       username: 'johndoe',
       email: 'john.doe@example.com',
-      hashedPassword: 'hashedpassword1',
+      password: 'password1',
     },
     {
       username: 'janedoe',
       email: 'jane.doe@example.com',
-      hashedPassword: 'hashedpassword2',
+      password: 'password2',
     },
     {
       username: 'alice',
       email: 'alice@example.com',
-      hashedPassword: 'hashedpassword3',
+      password: 'password3',
     },
   ];
 }
