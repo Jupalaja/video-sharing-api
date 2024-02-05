@@ -2,83 +2,84 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 
-import * as AuthorService from './user.service';
+import * as UserService from './user.service';
 
-export const authorRouter = express.Router();
+export const userRouter = express.Router();
 
-// GET: List of all Authors
-authorRouter.get('/', async (request: Request, response: Response) => {
+// GET: List of all Users
+userRouter.get('/', async (request: Request, response: Response) => {
   try {
-    const authors = await AuthorService.listAuthors();
-    return response.status(200).json(authors);
+    const users = await UserService.listUsers();
+    return response.status(200).json(users);
   } catch (error: any) {
     return response.status(500).json(error.message);
   }
 });
 
-// GET: A single author by ID
-authorRouter.get('/:id', async (request: Request, response: Response) => {
-  const id: number = parseInt(request.params.id, 10);
+// GET: A single user by ID
+userRouter.get('/:id', async (request: Request, response: Response) => {
+  const id: string = request.params.id;
   try {
-    const author = await AuthorService.getAuthor(id);
-    if (author) {
-      return response.status(200).json(author);
+    const user = await UserService.getUser(id);
+    if (user) {
+      return response.status(200).json(user);
     }
-    return response.status(404).json('Author could not be found');
+    return response.status(404).json('User could not be found');
   } catch (error: any) {
     return response.status(500).json(error.message);
   }
 });
 
-// POST: Create a Author
-// Params: firstName, lastName
-authorRouter.post(
+// POST: Create a User
+// Params: username, email, hashedPassword
+userRouter.post(
   '/',
-  body('firstName').isString(),
-  body('lastName').isString(),
+  body('username').isString(),
+  body('email').isEmail(),
+  body('hashedPassword').isString(),
   async (request: Request, response: Response) => {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
       return response.status(400).json({ errors: errors.array() });
     }
     try {
-      const author = request.body;
-      const newAuthor = await AuthorService.createAuthor(author);
-      return response.status(201).json(newAuthor);
+      const user = request.body;
+      const newUser = await UserService.createUser(user);
+      return response.status(201).json(newUser);
     } catch (error: any) {
       return response.status(500).json(error.message);
     }
   }
 );
 
-// PUT: Updating an Author
-// Params: firstName, lastName
-authorRouter.put(
+// PUT: Updating a User
+// Params: username, email (hashedPassword not included, should be changed through a different secure process)
+userRouter.put(
   '/:id',
-  body('firstName').isString(),
-  body('lastName').isString(),
+  body('username').isString(),
+  body('email').isEmail(),
   async (request: Request, response: Response) => {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
       return response.status(400).json({ errors: errors.array() });
     }
-    const id: number = parseInt(request.params.id, 10);
+    const id: string = request.params.id;
     try {
-      const author = request.body;
-      const updatedAuthor = await AuthorService.updateAuthor(author, id);
-      return response.status(200).json(updatedAuthor);
+      const userUpdateData = request.body;
+      const updatedUser = await UserService.updateUser(id, userUpdateData);
+      return response.status(200).json(updatedUser);
     } catch (error: any) {
       return response.status(500).json(error.message);
     }
   }
 );
 
-// DELETE: Delete an author based on the id
-authorRouter.delete('/:id', async (request: Request, response: Response) => {
-  const id: number = parseInt(request.params.id, 10);
+// DELETE: Delete a user based on the id
+userRouter.delete('/:id', async (request: Request, response: Response) => {
+  const id: string = request.params.id;
   try {
-    await AuthorService.deleteAuthor(id);
-    return response.status(204).json('Author has been successfully deleted');
+    await UserService.deleteUser(id);
+    return response.status(204).json('User has been successfully deleted');
   } catch (error: any) {
     return response.status(500).json(error.message);
   }
