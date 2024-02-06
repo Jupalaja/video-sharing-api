@@ -4,6 +4,7 @@ import cors from 'cors';
 
 import { userRouter } from './user/user.router';
 import { videoRouter } from './video/video.router';
+import { authRouter } from './auth/auth.router';
 
 dotenv.config();
 
@@ -21,7 +22,8 @@ app.use(express.json());
 
 app.use('/api/user', userRouter);
 app.use('/api/video', videoRouter);
+app.use('/api/auth', authRouter);
 
 app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
+  console.log(`Listening on ${process.env.URL}:${PORT}`);
 });

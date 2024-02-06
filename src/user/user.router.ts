@@ -1,11 +1,8 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { isUniqueEmail } from '../middlewares/isUniqueEmail';
-import { hashPassword } from '../middlewares/hashPassword';
-import { isValidPassword } from '../middlewares/isValidPassword';
-import { isUniqueUsername } from '../middlewares/isUniqueUsername';
-
+import { hashPassword, isValidPassword } from '../auth/auth.middlewares';
+import { verifyAuthorization, isAllowedUser } from './user.middlewares';
 import * as UserService from './user.service';
 
 export const userRouter = express.Router();
@@ -41,30 +38,22 @@ userRouter.get(
   }
 );
 
-userRouter.post(
-  '/',
-  body('username').isString(),
-  isUniqueEmail(),
-  isUniqueUsername(),
-  isValidPassword(),
-  hashPassword,
-  async (request: Request, response: Response) => {
-    const errors = validationResult(request);
-    if (!errors.isEmpty()) {
-      return response.status(400).json({ error: errors.array() });
-    }
-    try {
-      const user = request.body;
-      const newUser = await UserService.createUser(user);
-      return response.status(201).json({
-        message: 'User successfully added',
-        data: newUser,
-      });
-    } catch (error: any) {
-      return response.status(500).json({ error: error.message });
-    }
+userRouter.post('/', async (request: Request, response: Response) => {
+  const errors = validationResult(request);
+  if (!errors.isEmpty()) {
+    return response.status(400).json({ error: errors.array() });
   }
-);
+  try {
+    const user = request.body;
+    const newUser = await UserService.createUser(user);
+    return response.status(201).json({
+      message: 'User successfully added',
+      data: newUser,
+    });
+  } catch (error: any) {
+    return response.status(500).json({ error: error.message });
+  }
+});
 
 userRouter.put(
   '/:id',
@@ -72,6 +61,8 @@ userRouter.put(
   body('username').isString(),
   isValidPassword(),
   hashPassword,
+  verifyAuthorization,
+  isAllowedUser,
   async (request: Request, response: Response) => {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
@@ -95,6 +86,8 @@ userRouter.put(
 userRouter.delete(
   '/:id',
   [param('id').isInt()],
+  verifyAuthorization,
+  isAllowedUser,
   async (request: Request, response: Response) => {
     const id: number = parseInt(request.params.id, 10);
     try {
