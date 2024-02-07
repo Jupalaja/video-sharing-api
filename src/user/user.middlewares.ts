@@ -30,7 +30,6 @@ export const isAuthorizedUser = (
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Attach the token payload to res.locals which is safe to extend
     res.locals.user = {
       id: tokenPayload.userId,
       username: tokenPayload.username,

@@ -10,6 +10,7 @@ export type Video = {
   likes: number;
   userId: number;
 };
+
 export const listVideos = async (
   userId?: number,
   sort?: 'likes' | 'title',

@@ -45,16 +45,14 @@ authRouter.post(
 
 authRouter.post(
   '/login',
-  body('identifier').isString(),
+  body('identifier').isString().withMessage('Identifier must be a string'),
   body('password').isString().withMessage('Password must be provided'),
   async (req: Request, res: Response) => {
-    const { identifier, password } = req.body;
-
-    if (!identifier || !password) {
-      return res
-        .status(400)
-        .json({ error: 'Username/email and password are required' });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
     }
+    const { identifier, password } = req.body;
 
     try {
       const authResult = await authenticateUser(identifier, password);
