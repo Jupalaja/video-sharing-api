@@ -10,9 +10,18 @@ export type Video = {
   likes: number;
   userId: number;
 };
-export const listVideos = async (userId?: number): Promise<Video[]> => {
+export const listVideos = async (
+  userId?: number,
+  sort?: 'likes' | 'title',
+  order: 'asc' | 'desc' = 'asc'
+): Promise<Video[]> => {
+  let orderByArgs: Record<string, 'asc' | 'desc'> | {} = {};
+  if (sort) {
+    orderByArgs = {
+      [sort]: order,
+    };
+  }
   if (userId) {
-    // If user is authenticated, return both public videos and the user's private videos
     return db.video.findMany({
       where: {
         OR: [{ isPrivate: false }, { userId }],
@@ -27,9 +36,9 @@ export const listVideos = async (userId?: number): Promise<Video[]> => {
         likes: true,
         userId: true,
       },
+      orderBy: orderByArgs,
     });
   } else {
-    // If user is not authenticated, return only the public videos
     return db.video.findMany({
       where: {
         isPrivate: false,
@@ -44,6 +53,7 @@ export const listVideos = async (userId?: number): Promise<Video[]> => {
         likes: true,
         userId: true,
       },
+      orderBy: orderByArgs,
     });
   }
 };
@@ -107,4 +117,38 @@ export const deleteVideo = async (id: string): Promise<void> => {
       id,
     },
   });
+};
+
+export const addLikeToVideo = async (id: string): Promise<Video> => {
+  const video = await getVideo(id);
+  if (!video) {
+    throw new Error('Video not found');
+  }
+  return db.video.update({
+    where: { id },
+    data: {
+      likes: {
+        increment: 1,
+      },
+    },
+  });
+};
+
+export const removeLikeFromVideo = async (id: string): Promise<Video> => {
+  const video = await getVideo(id);
+  if (!video) {
+    throw new Error('Video not found');
+  }
+  if (video.likes > 0) {
+    return db.video.update({
+      where: { id },
+      data: {
+        likes: {
+          decrement: 1,
+        },
+      },
+    });
+  } else {
+    return video;
+  }
 };

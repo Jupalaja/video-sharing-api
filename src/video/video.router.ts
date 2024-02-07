@@ -11,9 +11,24 @@ videoRouter.get(
   '/',
   populateUserIfAuthenticated,
   async (request: Request, response: Response) => {
+    const sort = request.query.sort;
+    const order = request.query.order;
+
+    if (sort && sort !== 'likes' && sort !== 'title') {
+      return response.status(400).json({ error: 'Invalid sort value' });
+    }
+
+    if (order && order !== 'asc' && order !== 'desc') {
+      return response.status(400).json({ error: 'Invalid order value' });
+    }
+
     try {
       const userId = response.locals.user?.id;
-      const videos = await VideoService.listVideos(userId);
+      const videos = await VideoService.listVideos(
+        userId,
+        sort as 'likes' | 'title',
+        order as 'asc' | 'desc'
+      );
 
       return response.status(200).json({ data: videos });
     } catch (error: any) {
@@ -38,9 +53,7 @@ videoRouter.get(
       const video = await VideoService.getVideo(id);
 
       if (!video) {
-        return response
-          .status(404)
-          .json({ message: 'Video could not be found' });
+        return response.status(404).json({ error: 'Video could not be found' });
       }
 
       if (video.isPrivate && video.userId !== userId) {
@@ -125,6 +138,50 @@ videoRouter.delete(
       return response
         .status(200)
         .json({ message: 'Video was successfully deleted' });
+    } catch (error: any) {
+      return response.status(500).json({ error: error.message });
+    }
+  }
+);
+
+videoRouter.post(
+  '/:id/like',
+  [param('id').isUUID()],
+  async (request: Request, response: Response) => {
+    const errors = validationResult(request);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ error: errors.array() });
+    }
+    const videoId: string = request.params.id;
+
+    try {
+      const updatedVideo = await VideoService.addLikeToVideo(videoId);
+      return response.status(200).json({
+        message: 'Like was successfully added to the video',
+        data: updatedVideo,
+      });
+    } catch (error: any) {
+      return response.status(500).json({ error: error.message });
+    }
+  }
+);
+
+videoRouter.delete(
+  '/:id/like',
+  [param('id').isUUID()],
+  async (request: Request, response: Response) => {
+    const errors = validationResult(request);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ error: errors.array() });
+    }
+    const videoId: string = request.params.id;
+
+    try {
+      const updatedVideo = await VideoService.removeLikeFromVideo(videoId);
+      return response.status(200).json({
+        message: 'Like was successfully removed from the video',
+        data: updatedVideo,
+      });
     } catch (error: any) {
       return response.status(500).json({ error: error.message });
     }
