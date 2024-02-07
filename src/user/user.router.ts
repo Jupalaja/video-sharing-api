@@ -2,7 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { hashPassword, isValidPassword } from '../auth/auth.middlewares';
-import { verifyAuthorization, isAllowedUser } from './user.middlewares';
+import { isAuthorizedUser, isAllowedUser } from './user.middlewares';
 import * as UserService from './user.service';
 
 export const userRouter = express.Router();
@@ -58,10 +58,9 @@ userRouter.post('/', async (request: Request, response: Response) => {
 userRouter.put(
   '/:id',
   [param('id').isInt()],
-  body('username').isString(),
   isValidPassword(),
   hashPassword,
-  verifyAuthorization,
+  isAuthorizedUser,
   isAllowedUser,
   async (request: Request, response: Response) => {
     const errors = validationResult(request);
@@ -86,14 +85,14 @@ userRouter.put(
 userRouter.delete(
   '/:id',
   [param('id').isInt()],
-  verifyAuthorization,
+  isAuthorizedUser,
   isAllowedUser,
   async (request: Request, response: Response) => {
     const id: number = parseInt(request.params.id, 10);
     try {
       await UserService.deleteUser(id);
       return response
-        .status(204)
+        .status(200)
         .json({ message: 'User has been successfully deleted' });
     } catch (error: any) {
       return response.status(500).json({ error: error.message });

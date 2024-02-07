@@ -1,34 +1,40 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
-export const verifyAuthorization = (
+interface TokenPayload extends JwtPayload {
+  userId: number;
+  username: string;
+}
+
+export const isAuthorizedUser = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token)
+    if (!token) {
       return res
         .status(401)
         .json({ error: 'Access denied. No token provided.' });
+    }
 
     const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) throw new Error('JWT secret not provided in environment');
+    if (!jwtSecret) {
+      throw new Error('JWT secret not provided in environment');
+    }
 
-    const tokenPayload = jwt.verify(token, jwtSecret) as any;
+    const tokenPayload = jwt.verify(token, jwtSecret) as TokenPayload;
 
     if (!tokenPayload) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    if (req.params.id && tokenPayload.userId !== parseInt(req.params.id, 10)) {
-      return res
-        .status(403)
-        .json({ error: 'Unauthorized to access this resource' });
-    }
-
-    req.user = { id: tokenPayload.userId, username: tokenPayload.username };
+    // Attach the token payload to res.locals which is safe to extend
+    res.locals.user = {
+      id: tokenPayload.userId,
+      username: tokenPayload.username,
+    };
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
@@ -47,7 +53,7 @@ export const isAllowedUser = (
   res: Response,
   next: NextFunction
 ) => {
-  const loggedInUserId = req.user?.id;
+  const loggedInUserId = res.locals.user?.id;
 
   const targetUserId = parseInt(req.params.id, 10);
 

@@ -10,8 +10,45 @@ export type Video = {
   likes: number;
   userId: number;
 };
+export const listVideos = async (userId?: number): Promise<Video[]> => {
+  if (userId) {
+    // If user is authenticated, return both public videos and the user's private videos
+    return db.video.findMany({
+      where: {
+        OR: [{ isPrivate: false }, { userId }],
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        uploadedAt: true,
+        credits: true,
+        isPrivate: true,
+        likes: true,
+        userId: true,
+      },
+    });
+  } else {
+    // If user is not authenticated, return only the public videos
+    return db.video.findMany({
+      where: {
+        isPrivate: false,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        uploadedAt: true,
+        credits: true,
+        isPrivate: true,
+        likes: true,
+        userId: true,
+      },
+    });
+  }
+};
 
-export const listVideos = async (): Promise<Video[]> => {
+export const listAllVideos = async (): Promise<Video[]> => {
   return db.video.findMany({
     select: {
       id: true,
@@ -27,26 +64,22 @@ export const listVideos = async (): Promise<Video[]> => {
 };
 
 export const getVideo = async (id: string): Promise<Video | null> => {
-  return db.video.findUnique({
+  const video = await db.video.findUnique({
     where: {
       id,
     },
   });
+  return video;
 };
 
 export const createVideo = async (
-  videoData: Omit<Video, 'id'>
+  videoData: Omit<Video, 'id' | 'userId'>,
+  userId: number
 ): Promise<Video> => {
-  const { title, description, uploadedAt, credits, isPrivate, likes, userId } =
-    videoData;
   return db.video.create({
     data: {
-      title,
-      description,
-      uploadedAt: uploadedAt || new Date(),
-      credits,
-      isPrivate,
-      likes,
+      ...videoData,
+      uploadedAt: new Date(),
       userId,
     },
   });
@@ -54,8 +87,12 @@ export const createVideo = async (
 
 export const updateVideo = async (
   id: string,
-  videoUpdateData: Partial<Video>
+  videoUpdateData: Omit<Video, 'id'>
 ): Promise<Video> => {
+  const existingVideo = await db.video.findUnique({
+    where: { id },
+  });
+
   return db.video.update({
     where: {
       id,
